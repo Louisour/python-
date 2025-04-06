@@ -116,8 +116,47 @@ class GameSound(object):
     def playBackgroundMusic(self):
         pygame.mixer.music.play(-1)
 
+class Bomb(object):
+    def __init__(self,screen,type):
+        self.screen = screen
+        if type=='enemy':
+            self.mImage=[pygame.image.load
+                         ("./images/enemy1_down"+str(v)+".png")for v in range(1,4) ]#用拼接的方式加上列表推导式将几个图片连续地传入实现视觉上的动态展示
+        else:
+            self.mImage=[pygame.image.load
+                         ("./images/me_destroy"+str(v)+".png")for v in range(1,4) ]
+        self.mIndex=0#爆炸图片循环的索引
+        self.mPos=[0,0]#爆炸的坐标
+        self.mVisible=False
+    def action(self,rect):
+        self.mPos[0]=rect.left
+        self.mPos[1]=rect.top
+        self.mVisible=True
 
+class Manager(object):
+    def __init__(self):
+        self.screen = pygame.display.set_mode((480,700), 0, 32)
+        self.background=pygame.image.load('./images/background.png')
+        self.players=pygame.sprite.Group()  # 精灵组（pygame.sprite.Group）
+                                            # 精灵组是一个容器，用于存储和管理多个精灵对象。它提供了以下功能：
+                                            # 批量更新精灵状态：调用 update() 方法时，会自动调用组内每个精灵的 update() 方法。
+                                            # 批量绘制精灵：调用 draw() 方法时，会自动将组内每个精灵绘制到屏幕上。
+                                            # 精灵的添加和移除：可以动态地向组中添加或移除精灵。
+        self.enemies=pygame.sprite.Group()
+        self.player_bomb=Bomb(self.screen,'player')#爆炸类里面的判断
+        self.enemies_bomb=Bomb(self.screen,'enemy')
+        self.sound=GameSound()
 
+    def exit(self):
+        print('退出')
+        pygame.quit()
+        exit()
+    def new_enemy(self):#创建敌机的对象添加到敌机组中
+        enemy=Enemyplane(self.screen)
+        self.enemies.add(enemy)
+    def new_player(self):
+        player=Heroplane(self.screen)
+        self.player.add(player)
 def main():#整个程序控制
     sound=GameSound()
     sound.playBackgroundMusic()
