@@ -124,7 +124,7 @@ class Bomb(object):
                          ("./images/enemy1_down"+str(v)+".png")for v in range(1,4) ]#用拼接的方式加上列表推导式将几个图片连续地传入实现视觉上的动态展示
         else:
             self.mImage=[pygame.image.load
-                         ("./images/me_destroy"+str(v)+".png")for v in range(1,4) ]
+                         ("./images/me_destroy_"+str(v)+".png")for v in range(1,4) ]
         self.mIndex=0#爆炸图片循环的索引
         self.mPos=[0,0]#爆炸的坐标
         self.mVisible=False
@@ -133,6 +133,14 @@ class Bomb(object):
         self.mPos[0]=rect.left#爆炸坐标
         self.mPos[1]=rect.top
         self.mVisible=True#打开爆炸的开关
+
+    def draw(self):
+        while self.mVisible:
+            for image in self.mImage:
+                self.screen.blit(image, self.mPos)
+
+        pygame.display.flip()
+        self.mVisible = False
 
 class Manager(object):#面向对象
     def __init__(self):
@@ -145,7 +153,7 @@ class Manager(object):#面向对象
                                             # 精灵的添加和移除：可以动态地向组中添加或移除精灵。
         self.enemies=pygame.sprite.Group()
         self.player_bomb=Bomb(self.screen,'player')#爆炸类里面的判断
-        self.enemies_bomb=Bomb(self.screen,'enemy')
+        self.enemy_bomb=Bomb(self.screen,'enemy')
         self.sound=GameSound()
 
     def exit(self):
@@ -153,11 +161,11 @@ class Manager(object):#面向对象
         pygame.quit()
         exit()
     def new_enemy(self):#创建敌机的对象添加到敌机组中
-        enemy=Enemyplane(self.screen)
+        enemy = Enemyplane(self.screen)
         self.enemies.add(enemy)
     def new_player(self):
         player=Heroplane(self.screen)
-        self.player.add(player)
+        self.players.add(player)
     def main(self):
         self.sound.playBackgroundMusic()
         self.new_player()
@@ -171,6 +179,14 @@ class Manager(object):#面向对象
 
             self.player_bomb.draw()
             self.enemy_bomb.draw()
+            iscollide=pygame.sprite.groupcollide(self.players,self.enemies,True,True)#这是一个字典
+            if iscollide:
+                items=list(iscollide.keys())[0]#用items获取到列表中飞机
+                print(items)
+                x=items[0]
+                y=items[1][0]
+                self.player_bomb.action(x.rect)
+                self.enemy_bomb.action(y.rect)
             self.players.update()
             self.enemies.update()
             pygame.display.update()
