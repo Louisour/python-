@@ -129,11 +129,12 @@ class Bomb(object):
         self.mPos=[0,0]#爆炸的坐标
         self.mVisible=False
     def action(self,rect):
-        self.mPos[0]=rect.left
+        #触发爆炸的方法draw
+        self.mPos[0]=rect.left#爆炸坐标
         self.mPos[1]=rect.top
-        self.mVisible=True
+        self.mVisible=True#打开爆炸的开关
 
-class Manager(object):
+class Manager(object):#面向对象
     def __init__(self):
         self.screen = pygame.display.set_mode((480,700), 0, 32)
         self.background=pygame.image.load('./images/background.png')
@@ -157,35 +158,25 @@ class Manager(object):
     def new_player(self):
         player=Heroplane(self.screen)
         self.player.add(player)
-def main():#整个程序控制
-    sound=GameSound()
-    sound.playBackgroundMusic()
-    #1窗口
-    screen=pygame.display.set_mode((480,700), 0, 32)
-    #2图片背景
-    background = pygame.image.load('./images/background.png')
-    player = Heroplane(screen)
-    enemyplane = Enemyplane(screen)
-    while True:
-        # 3将背景图片贴到窗口
-        screen.blit(background, (0, 0))
+    def main(self):
+        self.sound.playBackgroundMusic()
+        self.new_player()
+        self.new_enemy()
+        while True:
+            # 3将背景图片贴到窗口
+            self.screen.blit(self.background, (0, 0))
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    self.exit()
 
-        #获取事件
-        for event in pygame.event.get():
-            #判断事件类型
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-        player.key_control()
-        player.display()
-        enemyplane.display()
-        enemyplane.auto_move()
-        enemyplane.auto_fire()
-
-
-        #4show窗口内容
-        pygame.display.update()
-        time.sleep(0.01)
+            self.player_bomb.draw()
+            self.enemy_bomb.draw()
+            self.players.update()
+            self.enemies.update()
+            pygame.display.update()
+            time.sleep(0.01)
 
 if __name__ == '__main__':
-    main()
+    manager = Manager()
+    manager.main()
+
