@@ -10,7 +10,7 @@ class Heroplane(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)#精灵类的初始化方法必用；
         self.player = pygame.image.load('./images/me1.png')
         self.rect=self.player.get_rect()#这里的rect指矩形，也就是通过图像间的矩形对象来判断是否碰撞
-        self.rect.topleft=[480 / 2 - 102 / 2,550]#飞机图片的左上角坐标
+        self.rect.topleft=[Manager.bg_size[0]/ 2 - 102 / 2,550]#飞机图片的左上角坐标
         self.screen = screen
         # 飞机速度
         self.speed = 10
@@ -47,7 +47,6 @@ class Heroplane(pygame.sprite.Sprite):
 
 class Enemyplane(pygame.sprite.Sprite):
     def __init__(self,screen):
-
         pygame.sprite.Sprite.__init__(self)  # 精灵类的初始化方法必用；
         self.image = pygame.image.load('./images/enemy1.png')
         self.rect = self.image.get_rect()  # 这里的rect指矩形，也就是通过图像间的矩形对象来判断是否碰撞
@@ -70,15 +69,20 @@ class Enemyplane(pygame.sprite.Sprite):
             self.rect.right += self.speed-4
         elif self.direction == 'left':
             self.rect.right -= self.speed-4
-        if self.rect.right > 480-57:
+        if self.rect.right > Manager.bg_size[0]-57:
             self.direction = 'left'
         elif self.rect.right < 0:
             self.direction = 'right'
     def auto_fire(self):
-        random_num=random.randint(1,20)
+        random_num=random.randint(1,30)
         if random_num == 8:
             bullet=EnemyBullet(self.screen,self.rect.left,self.rect.top,self.speed)
             self.bullets.add(bullet)
+
+    def update(self):
+        self.auto_move()
+        self.auto_fire()
+        self.display()
 class Bullet(pygame.sprite.Sprite):
     def __init__(self,screen,x,y,speed):
         pygame.sprite.Sprite.__init__(self)
@@ -96,7 +100,7 @@ class EnemyBullet(pygame.sprite.Sprite):
     def __init__(self,screen,x,y,speed):
 
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load('./images/bullet2.png')
+        self.image = pygame.image.load('./images/bullet1.png')
         self.rect = self.image.get_rect()
         self.rect.topleft = [x+56/2-5/2, y+43]
         self.screen=screen
@@ -104,7 +108,7 @@ class EnemyBullet(pygame.sprite.Sprite):
 
     def update(self):
         self.rect.top += self.speed
-        if self.rect.top > 700:
+        if self.rect.top > Manager.bg_size[1]:
             self.kill()
 
 
@@ -113,9 +117,12 @@ class GameSound(object):
         pygame.mixer.init()
         pygame.mixer.music.load('./sound/game_music.ogg')
         pygame.mixer.music.set_volume(0.5)
+        self.me__bomb=pygame.mixer.Sound('./sound/me_down.wav')
+
     def playBackgroundMusic(self):
         pygame.mixer.music.play(-1)
-
+    def playBombSound(self):
+        pygame.mixer.Sound.play(self.me__bomb)
 class Bomb(object):
     def __init__(self,screen,type):
         self.screen = screen
@@ -135,14 +142,34 @@ class Bomb(object):
         self.mVisible=True#打开爆炸的开关
 
     def draw(self):
-        while self.mVisible:
-            for image in self.mImage:
-                self.screen.blit(image, self.mPos)
+        if not self.mVisible:
+            return
+        self.screen.blit(self.mImage[self.mIndex],(self.mPos[0],self.mPos[1]))
+        self.mIndex+=1
+        if self.mIndex>=len(self.mImage):
+            self.mIndex=0
+            self.mVisible=False
 
-        pygame.display.flip()
-        self.mVisible = False
 
+class GameBackground(object):
+    def __init__(self,screen):
+        self.mImage1=pygame.image.load("./images/background.png")
+        self.mImage2 = pygame.image.load("./images/background.png")
+        self.screen=screen
+        self.y1=0
+        self.y2=-Manager.bg_size[1]
+    def draw(self):
+        self.screen.blit(self.mImage1,(0,self.y1))
+        self.screen.blit(self.mImage1, (0, self.y2))
+    def move(self):
+        self.y1+=2
+        self.y2+=2
+        if self.y1>=Manager.bg_size[1]:
+            self.y1=0
+        if self.y2>=0:
+            self.y2=-Manager.bg_size[1]
 class Manager(object):#面向对象
+    bg_size=(480,700)
     def __init__(self):
         self.screen = pygame.display.set_mode((480,700), 0, 32)
         self.background=pygame.image.load('./images/background.png')
@@ -151,6 +178,7 @@ class Manager(object):#面向对象
                                             # 批量更新精灵状态：调用 update() 方法时，会自动调用组内每个精灵的 update() 方法。
                                             # 批量绘制精灵：调用 draw() 方法时，会自动将组内每个精灵绘制到屏幕上。
                                             # 精灵的添加和移除：可以动态地向组中添加或移除精灵。
+        self.map=GameBackground(self.screen)
         self.enemies=pygame.sprite.Group()
         self.player_bomb=Bomb(self.screen,'player')#爆炸类里面的判断
         self.enemy_bomb=Bomb(self.screen,'enemy')
@@ -160,19 +188,24 @@ class Manager(object):#面向对象
         print('退出')
         pygame.quit()
         exit()
-    def new_enemy(self):#创建敌机的对象添加到敌机组中
-        enemy = Enemyplane(self.screen)
-        self.enemies.add(enemy)
     def new_player(self):
         player=Heroplane(self.screen)
         self.players.add(player)
+
+    def new_enemy(self):#创建敌机的对象添加到敌机组中
+        enemy = Enemyplane(self.screen)
+        self.enemies.add(enemy)
     def main(self):
         self.sound.playBackgroundMusic()
         self.new_player()
         self.new_enemy()
+        self.new_enemy()
+        self.new_enemy()
         while True:
             # 3将背景图片贴到窗口
-            self.screen.blit(self.background, (0, 0))
+            # self.screen.blit(self.background, (0, 0))
+            self.map.move()
+            self.map.draw()
             for event in pygame.event.get():
                 if event.type == QUIT:
                     self.exit()
@@ -181,12 +214,13 @@ class Manager(object):#面向对象
             self.enemy_bomb.draw()
             iscollide=pygame.sprite.groupcollide(self.players,self.enemies,True,True)#这是一个字典
             if iscollide:
-                items=list(iscollide.keys())[0]#用items获取到列表中飞机
+                items=list(iscollide.items())[0]#用items获取到列表中飞机
                 print(items)
                 x=items[0]
                 y=items[1][0]
                 self.player_bomb.action(x.rect)
                 self.enemy_bomb.action(y.rect)
+                self.sound.playBombSound()
             self.players.update()
             self.enemies.update()
             pygame.display.update()
